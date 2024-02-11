@@ -521,11 +521,11 @@ void SceneMultiplayer::_process_raw(int p_from, const uint8_t *p_packet, int p_p
 	ERR_FAIL_COND_MSG(p_packet_len < 2, "Invalid packet received. Size too small.");
 
 	Vector<uint8_t> out;
-	int len = p_packet_len - 1;
+	int len = p_packet_len;
 	out.resize(len);
 	{
 		uint8_t *w = out.ptrw();
-		memcpy(&w[0], &p_packet[1], len);
+		memcpy(&w[0], &p_packet[0], len);
 	}
 	emit_signal(SNAME("peer_packet"), p_from, out);
 }
