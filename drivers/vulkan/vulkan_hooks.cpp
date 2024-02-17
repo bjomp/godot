@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  vulkan_context_x11.cpp                                                */
+/*  vulkan_hooks.cpp                                                      */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,38 +28,18 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifdef VULKAN_ENABLED
+#include "vulkan_hooks.h"
 
-#include "vulkan_context_x11.h"
+VulkanHooks *VulkanHooks::singleton = nullptr;
 
-#ifdef USE_VOLK
-#include <volk.h>
-#else
-#include <vulkan/vulkan.h>
-#endif
-
-const char *VulkanContextX11::_get_platform_surface_extension() const {
-	return VK_KHR_XLIB_SURFACE_EXTENSION_NAME;
+VulkanHooks::VulkanHooks() {
+	if (singleton == nullptr) {
+		singleton = this;
+	}
 }
 
-Error VulkanContextX11::window_create(DisplayServer::WindowID p_window_id, DisplayServer::VSyncMode p_vsync_mode, int p_width, int p_height, const void *p_platform_data) {
-	const WindowPlatformData *wpd = (const WindowPlatformData *)p_platform_data;
-
-	VkXlibSurfaceCreateInfoKHR createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-	createInfo.dpy = wpd->display;
-	createInfo.window = wpd->window;
-
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
-	VkResult err = vkCreateXlibSurfaceKHR(get_instance(), &createInfo, nullptr, &surface);
-	ERR_FAIL_COND_V(err, ERR_CANT_CREATE);
-	return _window_create(p_window_id, p_vsync_mode, surface, p_width, p_height);
+VulkanHooks::~VulkanHooks() {
+	if (singleton == this) {
+		singleton = nullptr;
+	}
 }
-
-VulkanContextX11::VulkanContextX11() {
-}
-
-VulkanContextX11::~VulkanContextX11() {
-}
-
-#endif // VULKAN_ENABLED

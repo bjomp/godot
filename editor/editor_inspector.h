@@ -514,8 +514,10 @@ class EditorInspector : public ScrollContainer {
 	int property_focusable;
 	int update_scroll_request;
 
+	LocalVector<Dictionary> property_configuration_warnings;
 	HashMap<StringName, HashMap<StringName, String>> doc_path_cache;
 	HashSet<StringName> restart_request_props;
+	HashMap<String, String> custom_property_descriptions;
 
 	HashMap<ObjectID, int> scroll_cache;
 
@@ -542,6 +544,7 @@ class EditorInspector : public ScrollContainer {
 
 	void _node_removed(Node *p_node);
 	void _warning_changed(Node *p_node);
+	bool _update_configuration_warnings();
 
 	HashMap<StringName, int> per_array_page;
 	void _page_change_request(int p_new_page, const StringName &p_array_prefix);
@@ -623,6 +626,9 @@ public:
 
 	void set_property_prefix(const String &p_prefix);
 	String get_property_prefix() const;
+
+	void add_custom_property_description(const String &p_class, const String &p_property, const String &p_description);
+	String get_custom_property_description(const String &p_property) const;
 
 	void set_object_class(const String &p_class);
 	String get_object_class() const;

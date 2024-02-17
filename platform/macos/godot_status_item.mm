@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  vulkan_context_macos.h                                                */
+/*  godot_status_item.mm                                                  */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,28 +28,74 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef VULKAN_CONTEXT_MACOS_H
-#define VULKAN_CONTEXT_MACOS_H
+#include "godot_status_item.h"
 
-#ifdef VULKAN_ENABLED
+#include "display_server_macos.h"
 
-#include "drivers/vulkan/vulkan_context.h"
+@implementation GodotStatusItemView
 
-#import <AppKit/AppKit.h>
+- (id)init {
+	self = [super init];
+	image = nullptr;
+	return self;
+}
 
-class VulkanContextMacOS : public VulkanContext {
-	virtual const char *_get_platform_surface_extension() const override final;
+- (void)setImage:(NSImage *)newImage {
+	image = newImage;
+	[self setNeedsDisplayInRect:self.frame];
+}
 
-public:
-	struct WindowPlatformData {
-		const id *view_ptr;
-	};
-	virtual Error window_create(DisplayServer::WindowID p_window_id, DisplayServer::VSyncMode p_vsync_mode, int p_width, int p_height, const void *p_platform_data) override final;
+- (void)setCallback:(const Callable &)callback {
+	cb = callback;
+}
 
-	VulkanContextMacOS();
-	~VulkanContextMacOS();
-};
+- (void)drawRect:(NSRect)rect {
+	if (image) {
+		[image drawInRect:rect];
+	}
+}
 
-#endif // VULKAN_ENABLED
+- (void)processMouseEvent:(NSEvent *)event index:(MouseButton)index {
+	DisplayServerMacOS *ds = (DisplayServerMacOS *)DisplayServer::get_singleton();
+	if (!ds) {
+		return;
+	}
 
-#endif // VULKAN_CONTEXT_MACOS_H
+	if (cb.is_valid()) {
+		Variant v_button = index;
+		Variant v_pos = ds->mouse_get_position();
+		Variant *v_args[2] = { &v_button, &v_pos };
+		Variant ret;
+		Callable::CallError ce;
+		cb.callp((const Variant **)&v_args, 2, ret, ce);
+	}
+}
+
+- (void)mouseDown:(NSEvent *)event {
+	[super mouseDown:event];
+	if (([event modifierFlags] & NSEventModifierFlagControl)) {
+		[self processMouseEvent:event index:MouseButton::RIGHT];
+	} else {
+		[self processMouseEvent:event index:MouseButton::LEFT];
+	}
+}
+
+- (void)rightMouseDown:(NSEvent *)event {
+	[super rightMouseDown:event];
+
+	[self processMouseEvent:event index:MouseButton::RIGHT];
+}
+
+- (void)otherMouseDown:(NSEvent *)event {
+	[super otherMouseDown:event];
+
+	if ((int)[event buttonNumber] == 2) {
+		[self processMouseEvent:event index:MouseButton::MIDDLE];
+	} else if ((int)[event buttonNumber] == 3) {
+		[self processMouseEvent:event index:MouseButton::MB_XBUTTON1];
+	} else if ((int)[event buttonNumber] == 4) {
+		[self processMouseEvent:event index:MouseButton::MB_XBUTTON2];
+	}
+}
+
+@end

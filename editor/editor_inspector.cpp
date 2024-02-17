@@ -998,7 +998,13 @@ Control *EditorProperty::make_custom_tooltip(const String &p_text) const {
 	EditorHelpBit *tooltip = nullptr;
 
 	if (has_doc_tooltip) {
-		tooltip = memnew(EditorHelpTooltip(p_text));
+		String custom_description;
+
+		const EditorInspector *inspector = get_parent_inspector();
+		if (inspector) {
+			custom_description = inspector->get_custom_property_description(p_text);
+		}
+		tooltip = memnew(EditorHelpTooltip(p_text, custom_description));
 	}
 
 	if (object->has_method("_get_property_warning")) {
@@ -2886,7 +2892,9 @@ void EditorInspector::update_tree() {
 						(!filter.is_empty() || !restrict_to_basic || (N->get().usage & PROPERTY_USAGE_EDITOR_BASIC_SETTING))) {
 					break;
 				}
-				if (N->get().usage & PROPERTY_USAGE_CATEGORY) {
+				// Treat custom categories as second-level ones. Do not skip a normal category if it is followed by a custom one.
+				// Skip in the other 3 cases (normal -> normal, custom -> custom, custom -> normal).
+				if ((N->get().usage & PROPERTY_USAGE_CATEGORY) && (p.hint_string.is_empty() || !N->get().hint_string.is_empty())) {
 					valid = false;
 					break;
 				}
@@ -3527,6 +3535,9 @@ void EditorInspector::edit(Object *p_object) {
 
 	object = p_object;
 
+	property_configuration_warnings.clear();
+	_update_configuration_warnings();
+
 	if (object) {
 		update_scroll_request = 0; //reset
 		if (scroll_cache.has(object->get_instance_id())) { //if exists, set something else
@@ -4050,8 +4061,48 @@ void EditorInspector::_node_removed(Node *p_node) {
 
 void EditorInspector::_warning_changed(Node *p_node) {
 	if (p_node == object) {
-		update_tree_pending = true;
+		// Only update the tree if the list of configuration warnings has changed.
+		if (_update_configuration_warnings()) {
+			update_tree_pending = true;
+		}
 	}
+}
+
+bool EditorInspector::_update_configuration_warnings() {
+	Node *node = Object::cast_to<Node>(object);
+	if (!node) {
+		return false;
+	}
+
+	bool changed = false;
+	LocalVector<int> found_warning_indices;
+
+	// New and changed warnings.
+	Vector<Dictionary> warnings = node->get_configuration_warnings_as_dicts();
+	for (const Dictionary &warning : warnings) {
+		if (!warning.has("property")) {
+			continue;
+		}
+
+		int found_warning_index = property_configuration_warnings.find(warning);
+		if (found_warning_index < 0) {
+			found_warning_index = property_configuration_warnings.size();
+			property_configuration_warnings.push_back(warning);
+			changed = true;
+		}
+		found_warning_indices.push_back(found_warning_index);
+	}
+
+	// Removed warnings.
+	for (uint32_t i = 0; i < property_configuration_warnings.size(); i++) {
+		if (found_warning_indices.find(i) < 0) {
+			property_configuration_warnings.remove_at(i);
+			i--;
+			changed = true;
+		}
+	}
+
+	return changed;
 }
 
 void EditorInspector::_notification(int p_what) {
@@ -4178,6 +4229,19 @@ void EditorInspector::set_property_prefix(const String &p_prefix) {
 
 String EditorInspector::get_property_prefix() const {
 	return property_prefix;
+}
+
+void EditorInspector::add_custom_property_description(const String &p_class, const String &p_property, const String &p_description) {
+	const String key = vformat("property|%s|%s|", p_class, p_property);
+	custom_property_descriptions[key] = p_description;
+}
+
+String EditorInspector::get_custom_property_description(const String &p_property) const {
+	HashMap<String, String>::ConstIterator E = custom_property_descriptions.find(p_property);
+	if (E) {
+		return E->value;
+	}
+	return "";
 }
 
 void EditorInspector::set_object_class(const String &p_class) {

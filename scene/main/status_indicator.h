@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  vulkan_context_wayland.h                                              */
+/*  status_indicator.h                                                    */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,25 +28,35 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef VULKAN_CONTEXT_WAYLAND_H
-#define VULKAN_CONTEXT_WAYLAND_H
+#ifndef STATUS_INDICATOR_H
+#define STATUS_INDICATOR_H
 
-#ifdef VULKAN_ENABLED
+#include "scene/main/node.h"
+#include "servers/display_server.h"
 
-#include "drivers/vulkan/vulkan_context.h"
+class StatusIndicator : public Node {
+	GDCLASS(StatusIndicator, Node);
 
-class VulkanContextWayland : public VulkanContext {
-	const char *_get_platform_surface_extension() const override final;
+	Ref<Image> icon;
+	String tooltip;
+	bool visible = true;
+	DisplayServer::IndicatorID iid = DisplayServer::INVALID_INDICATOR_ID;
+
+protected:
+	void _notification(int p_what);
+	static void _bind_methods();
+
+	void _callback(MouseButton p_index, const Point2i &p_pos);
 
 public:
-	struct WindowPlatformData {
-		struct wl_display *display;
-		struct wl_surface *surface;
-	};
+	void set_icon(const Ref<Image> &p_icon);
+	Ref<Image> get_icon() const;
 
-	Error window_create(DisplayServer::WindowID p_window_id, DisplayServer::VSyncMode p_vsync_mode, int p_width, int p_height, const void *p_platform_data) override final;
+	void set_tooltip(const String &p_tooltip);
+	String get_tooltip() const;
+
+	void set_visible(bool p_visible);
+	bool is_visible() const;
 };
 
-#endif // VULKAN_ENABLED
-
-#endif // VULKAN_CONTEXT_WAYLAND_H
+#endif // STATUS_INDICATOR_H
