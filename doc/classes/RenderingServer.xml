@@ -1145,6 +1145,7 @@
 			<param index="7" name="height_density" type="float" />
 			<param index="8" name="aerial_perspective" type="float" />
 			<param index="9" name="sky_affect" type="float" />
+			<param index="10" name="fog_mode" type="int" enum="RenderingServer.EnvironmentFogMode" default="0" />
 			<description>
 				Configures fog for the specified environment RID. See [code]fog_*[/code] properties in [Environment] for more information.
 			</description>
@@ -2332,6 +2333,13 @@
 				[b]Note:[/b] If the buffer is in the engine's internal cache, it will have to be fetched from GPU memory and possibly decompressed. This means [method multimesh_get_buffer] is potentially a slow operation and should be avoided whenever possible.
 			</description>
 		</method>
+		<method name="multimesh_get_custom_aabb" qualifiers="const">
+			<return type="AABB" />
+			<param index="0" name="multimesh" type="RID" />
+			<description>
+				Returns the custom AABB defined for this MultiMesh resource.
+			</description>
+		</method>
 		<method name="multimesh_get_instance_count" qualifiers="const">
 			<return type="int" />
 			<param index="0" name="multimesh" type="RID" />
@@ -2440,6 +2448,14 @@
 				  - Position + Custom data: 16 floats (12 floats for Transform3D, 4 floats of custom data)
 				  - Position + Vertex color + Custom data: 20 floats (12 floats for Transform3D, 4 floats for Color, 4 floats of custom data)
 				[/codeblock]
+			</description>
+		</method>
+		<method name="multimesh_set_custom_aabb">
+			<return type="void" />
+			<param index="0" name="multimesh" type="RID" />
+			<param index="1" name="aabb" type="AABB" />
+			<description>
+				Sets the custom AABB for this MultiMesh resource.
 			</description>
 		</method>
 		<method name="multimesh_set_mesh">
@@ -4873,6 +4889,12 @@
 		</constant>
 		<constant name="ENV_GLOW_BLEND_MODE_MIX" value="4" enum="EnvironmentGlowBlendMode">
 			Mixes the glow with the underlying color to avoid increasing brightness as much while still maintaining a glow effect.
+		</constant>
+		<constant name="ENV_FOG_MODE_EXPONENTIAL" value="0" enum="EnvironmentFogMode">
+			Use a physically-based fog model defined primarily by fog density.
+		</constant>
+		<constant name="ENV_FOG_MODE_DEPTH" value="1" enum="EnvironmentFogMode">
+			Use a simple fog model defined by start and end positions and a custom curve. While not physically accurate, this model can be useful when you need more artistic control.
 		</constant>
 		<constant name="ENV_TONE_MAPPER_LINEAR" value="0" enum="EnvironmentToneMapper">
 			Output color as they came in. This can cause bright lighting to look blown out, with noticeable clipping in the output colors.

@@ -807,12 +807,8 @@ void GDExtension::deinitialize_library(InitializationLevel p_level) {
 }
 
 void GDExtension::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("open_library", "path", "entry_symbol"), &GDExtension::open_library);
-	ClassDB::bind_method(D_METHOD("close_library"), &GDExtension::close_library);
 	ClassDB::bind_method(D_METHOD("is_library_open"), &GDExtension::is_library_open);
-
 	ClassDB::bind_method(D_METHOD("get_minimum_library_initialization_level"), &GDExtension::get_minimum_library_initialization_level);
-	ClassDB::bind_method(D_METHOD("initialize_library", "level"), &GDExtension::initialize_library);
 
 	BIND_ENUM_CONSTANT(INITIALIZATION_LEVEL_CORE);
 	BIND_ENUM_CONSTANT(INITIALIZATION_LEVEL_SERVERS);
@@ -912,6 +908,39 @@ Error GDExtensionResourceLoader::load_gdextension_resource(const String &p_path,
 	if (!compatible) {
 		ERR_PRINT(vformat("GDExtension only compatible with Godot version %d.%d.%d or later: %s", compatibility_minimum[0], compatibility_minimum[1], compatibility_minimum[2], p_path));
 		return ERR_INVALID_DATA;
+	}
+
+	// Optionally check maximum compatibility.
+	if (config->has_section_key("configuration", "compatibility_maximum")) {
+		uint32_t compatibility_maximum[3] = { 0, 0, 0 };
+		String compat_string = config->get_value("configuration", "compatibility_maximum");
+		Vector<int> parts = compat_string.split_ints(".");
+		for (int i = 0; i < 3; i++) {
+			if (i < parts.size() && parts[i] >= 0) {
+				compatibility_maximum[i] = parts[i];
+			} else {
+				// If a version part is missing, set the maximum to an arbitrary high value.
+				compatibility_maximum[i] = 9999;
+			}
+		}
+
+		compatible = true;
+		if (VERSION_MAJOR != compatibility_maximum[0]) {
+			compatible = VERSION_MAJOR < compatibility_maximum[0];
+		} else if (VERSION_MINOR != compatibility_maximum[1]) {
+			compatible = VERSION_MINOR < compatibility_maximum[1];
+		}
+#if VERSION_PATCH
+		// #if check to avoid -Wtype-limits warning when 0.
+		else {
+			compatible = VERSION_PATCH <= compatibility_maximum[2];
+		}
+#endif
+
+		if (!compatible) {
+			ERR_PRINT(vformat("GDExtension only compatible with Godot version %s or earlier: %s", compat_string, p_path));
+			return ERR_INVALID_DATA;
+		}
 	}
 
 	String library_path = GDExtension::find_extension_library(p_path, config, [](const String &p_feature) { return OS::get_singleton()->has_feature(p_feature); });

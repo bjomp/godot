@@ -221,11 +221,25 @@ String EditorExportPreset::get_name() const {
 
 void EditorExportPreset::set_runnable(bool p_enable) {
 	runnable = p_enable;
+	EditorExport::singleton->emit_presets_runnable_changed();
 	EditorExport::singleton->save_presets();
 }
 
 bool EditorExportPreset::is_runnable() const {
 	return runnable;
+}
+
+void EditorExportPreset::set_advanced_options_enabled(bool p_enabled) {
+	if (advanced_options_enabled == p_enabled) {
+		return;
+	}
+	advanced_options_enabled = p_enabled;
+	EditorExport::singleton->save_presets();
+	notify_property_list_changed();
+}
+
+bool EditorExportPreset::are_advanced_options_enabled() const {
+	return advanced_options_enabled;
 }
 
 void EditorExportPreset::set_dedicated_server(bool p_enable) {
