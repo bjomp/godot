@@ -932,9 +932,6 @@ void CodeTextEditor::_complete_request() {
 	if (code_complete_func) {
 		code_complete_func(code_complete_ud, ctext, &entries, forced);
 	}
-	if (entries.size() == 0) {
-		return;
-	}
 
 	for (const ScriptLanguage::CodeCompletionOption &e : entries) {
 		Color font_color = completion_font_color;
@@ -1059,7 +1056,6 @@ void CodeTextEditor::update_editor_settings() {
 		text_editor->set_line_length_guidelines(TypedArray<int>());
 	}
 
-	_update_font_ligatures();
 	set_zoom_factor(zoom_factor);
 }
 
@@ -1683,10 +1679,6 @@ void CodeTextEditor::goto_error() {
 }
 
 void CodeTextEditor::_update_text_editor_theme() {
-	if (!EditorThemeManager::is_generated_theme_outdated()) {
-		return;
-	}
-
 	emit_signal(SNAME("load_theme_settings"));
 
 	error_button->set_icon(get_editor_theme_icon(SNAME("StatusError")));
