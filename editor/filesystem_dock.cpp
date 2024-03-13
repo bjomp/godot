@@ -1160,7 +1160,7 @@ void FileSystemDock::_select_file(const String &p_path, bool p_select_in_favorit
 			if (err == OK) {
 				if (config->has_section_key("remap", "importer")) {
 					String importer = config->get_value("remap", "importer");
-					if (importer == "keep") {
+					if (importer == "keep" || importer == "skip") {
 						EditorNode::get_singleton()->show_warning(TTR("Importing has been disabled for this file, so it can't be opened for editing."));
 						return;
 					}
@@ -2575,6 +2575,11 @@ void FileSystemDock::fix_dependencies(const String &p_for_file) {
 	deps_editor->edit(p_for_file);
 }
 
+void FileSystemDock::focus_on_path() {
+	current_path_line_edit->grab_focus();
+	current_path_line_edit->select_all();
+}
+
 void FileSystemDock::focus_on_filter() {
 	LineEdit *current_search_box = nullptr;
 	if (display_mode == DISPLAY_MODE_TREE_ONLY) {
@@ -3398,6 +3403,8 @@ void FileSystemDock::_tree_gui_input(Ref<InputEvent> p_event) {
 			_tree_rmb_option(FILE_OPEN_EXTERNAL);
 		} else if (ED_IS_SHORTCUT("filesystem_dock/open_in_terminal", p_event)) {
 			_tree_rmb_option(FILE_OPEN_IN_TERMINAL);
+		} else if (ED_IS_SHORTCUT("file_dialog/focus_path", p_event)) {
+			focus_on_path();
 		} else if (ED_IS_SHORTCUT("editor/open_search", p_event)) {
 			focus_on_filter();
 		} else {
