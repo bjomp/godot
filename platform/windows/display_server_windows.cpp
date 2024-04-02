@@ -114,6 +114,8 @@ bool DisplayServerWindows::has_feature(Feature p_feature) const {
 		case FEATURE_ICON:
 		case FEATURE_NATIVE_ICON:
 		case FEATURE_NATIVE_DIALOG:
+		case FEATURE_NATIVE_DIALOG_INPUT:
+		case FEATURE_NATIVE_DIALOG_FILE:
 		case FEATURE_SWAP_BUFFERS:
 		case FEATURE_KEEP_SCREEN_ON:
 		case FEATURE_TEXT_TO_SPEECH:
@@ -903,8 +905,7 @@ static BOOL CALLBACK _MonitorEnumProcPos(HMONITOR hMonitor, HDC hdcMonitor, LPRE
 
 static BOOL CALLBACK _MonitorEnumProcOrigin(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
 	EnumPosData *data = (EnumPosData *)dwData;
-	data->pos.x = MIN(data->pos.x, lprcMonitor->left);
-	data->pos.y = MIN(data->pos.y, lprcMonitor->top);
+	data->pos = data->pos.min(Point2(lprcMonitor->left, lprcMonitor->top));
 
 	return TRUE;
 }
@@ -1637,8 +1638,7 @@ void DisplayServerWindows::window_set_current_screen(int p_screen, WindowID p_wi
 		Size2i wsize = window_get_size(p_window);
 		wpos += srect.position;
 
-		wpos.x = CLAMP(wpos.x, srect.position.x, srect.position.x + srect.size.width - wsize.width / 3);
-		wpos.y = CLAMP(wpos.y, srect.position.y, srect.position.y + srect.size.height - wsize.height / 3);
+		wpos = wpos.clamp(srect.position, srect.position + srect.size - wsize / 3);
 		window_set_position(wpos, p_window);
 	}
 }
@@ -5076,8 +5076,7 @@ DisplayServer::WindowID DisplayServerWindows::_create_window(WindowMode p_mode, 
 		Rect2i srect = screen_get_usable_rect(rq_screen);
 		Point2i wpos = p_rect.position;
 		if (srect != Rect2i()) {
-			wpos.x = CLAMP(wpos.x, srect.position.x, srect.position.x + srect.size.width - p_rect.size.width / 3);
-			wpos.y = CLAMP(wpos.y, srect.position.y, srect.position.y + srect.size.height - p_rect.size.height / 3);
+			wpos = wpos.clamp(srect.position, srect.position + srect.size - p_rect.size / 3);
 		}
 
 		WindowRect.left = wpos.x;
