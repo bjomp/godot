@@ -763,19 +763,15 @@ def detect_visual_c_compiler_version(tools_env):
 def find_visual_c_batch_file(env):
     from SCons.Tool.MSCommon.vc import get_default_version, get_host_target, find_batch_file, find_vc_pdir
 
-    # Syntax changed in SCons 4.4.0.
-    from SCons import __version__ as scons_raw_version
-
-    scons_ver = env._get_major_minor_revision(scons_raw_version)
-
     msvc_version = get_default_version(env)
 
-    if scons_ver >= (4, 4, 0):
+    # Syntax changed in SCons 4.4.0.
+    if env.scons_version >= (4, 4, 0):
         (host_platform, target_platform, _) = get_host_target(env, msvc_version)
     else:
         (host_platform, target_platform, _) = get_host_target(env)
 
-    if scons_ver < (4, 6, 0):
+    if env.scons_version < (4, 6, 0):
         return find_batch_file(env, msvc_version, host_platform, target_platform)[0]
 
     # Scons 4.6.0+ removed passing env, so we need to get the product_dir ourselves first,
@@ -926,7 +922,11 @@ def get_compiler_version(env):
         # Not using -dumpversion as some GCC distros only return major, and
         # Clang used to return hardcoded 4.2.1: # https://reviews.llvm.org/D56803
         try:
-            version = subprocess.check_output([env.subst(env["CXX"]), "--version"]).strip().decode("utf-8")
+            version = (
+                subprocess.check_output([env.subst(env["CXX"]), "--version"], shell=(os.name == "nt"))
+                .strip()
+                .decode("utf-8")
+            )
         except (subprocess.CalledProcessError, OSError):
             print("Couldn't parse CXX environment variable to infer compiler version.")
             return ret
@@ -990,6 +990,10 @@ def using_emcc(env):
 
 
 def show_progress(env):
+    if env["ninja"]:
+        # Has its own progress/tracking tool that clashes with ours
+        return
+
     import sys
     from SCons.Script import Progress, Command, AlwaysBuild
 
@@ -1326,7 +1330,7 @@ def generate_vs_project(env, original_args, project_name="godot"):
 
         filters_template = filters_template.replace("%%HASH%%", md5)
 
-        with open(f"{project_name}.vcxproj.filters", "w", encoding="utf-8", newline="\n") as f:
+        with open(f"{project_name}.vcxproj.filters", "w", encoding="utf-8", newline="\r\n") as f:
             f.write(filters_template)
 
     envsources = []
@@ -1452,14 +1456,18 @@ def generate_vs_project(env, original_args, project_name="godot"):
 
         props_template = props_template.replace("%%OUTPUT%%", output)
 
-        props_template = props_template.replace(
-            "%%DEFINES%%", ";".join([format_key_value(v) for v in list(env["CPPDEFINES"])])
-        )
-        props_template = props_template.replace("%%INCLUDES%%", ";".join([str(j) for j in env["CPPPATH"]]))
-        props_template = props_template.replace(
-            "%%OPTIONS%%",
-            " ".join(env["CCFLAGS"]) + " " + " ".join([x for x in env["CXXFLAGS"] if not x.startswith("$")]),
-        )
+        proplist = [format_key_value(v) for v in list(env["CPPDEFINES"])]
+        proplist += [format_key_value(j) for j in env.get("VSHINT_DEFINES", [])]
+        props_template = props_template.replace("%%DEFINES%%", ";".join(proplist))
+
+        proplist = [str(j) for j in env["CPPPATH"]]
+        proplist += [str(j) for j in env.get("VSHINT_INCLUDES", [])]
+        props_template = props_template.replace("%%INCLUDES%%", ";".join(proplist))
+
+        proplist = env["CCFLAGS"]
+        proplist += [x for x in env["CXXFLAGS"] if not x.startswith("$")]
+        proplist += [str(j) for j in env.get("VSHINT_OPTIONS", [])]
+        props_template = props_template.replace("%%OPTIONS%%", " ".join(proplist))
 
         # Windows allows us to have spaces in paths, so we need
         # to double quote off the directory. However, the path ends
@@ -1503,7 +1511,7 @@ def generate_vs_project(env, original_args, project_name="godot"):
         props_template = props_template.replace("%%CLEAN%%", cmd)
 
         with open(
-            f"{project_name}.{platform}.{target}.{arch}.generated.props", "w", encoding="utf-8", newline="\n"
+            f"{project_name}.{platform}.{target}.{arch}.generated.props", "w", encoding="utf-8", newline="\r\n"
         ) as f:
             f.write(props_template)
 
@@ -1617,10 +1625,10 @@ def generate_vs_project(env, original_args, project_name="godot"):
         sln_template = sln_template.replace("%%NAME%%", project_name)
         sln_template = sln_template.replace("%%UUID%%", proj_uuid)
         sln_template = sln_template.replace("%%SLNUUID%%", sln_uuid)
-        sln_template = sln_template.replace("%%SECTION1%%", "\n    ".join(section1))
-        sln_template = sln_template.replace("%%SECTION2%%", "\n    ".join(section2))
+        sln_template = sln_template.replace("%%SECTION1%%", "\n\t\t".join(section1))
+        sln_template = sln_template.replace("%%SECTION2%%", "\n\t\t".join(section2))
 
-        with open(f"{project_name}.sln", "w", encoding="utf-8", newline="\n") as f:
+        with open(f"{project_name}.sln", "w", encoding="utf-8", newline="\r\n") as f:
             f.write(sln_template)
 
     if get_bool(original_args, "vsproj_gen_only", True):

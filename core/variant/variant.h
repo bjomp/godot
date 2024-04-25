@@ -165,7 +165,7 @@ private:
 	// Variant takes 20 bytes when real_t is float, and 36 if double
 	// it only allocates extra memory for aabb/matrix.
 
-	Type type = NIL;
+	Type type;
 
 	struct ObjData {
 		ObjectID id;
@@ -483,8 +483,8 @@ public:
 	Variant(const IPAddress &p_address);
 
 #define VARIANT_ENUM_CLASS_CONSTRUCTOR(m_enum) \
-	Variant(m_enum p_value) {                  \
-		type = INT;                            \
+	Variant(m_enum p_value) :                  \
+			type(INT) {                        \
 		_data._int = (int64_t)p_value;         \
 	}
 
@@ -788,7 +788,8 @@ public:
 	static void unregister_types();
 
 	Variant(const Variant &p_variant);
-	_FORCE_INLINE_ Variant() {}
+	_FORCE_INLINE_ Variant() :
+			type(NIL) {}
 	_FORCE_INLINE_ ~Variant() {
 		clear();
 	}
@@ -863,6 +864,58 @@ Callable Callable::bind(VarArgs... p_args) const {
 		argptrs[i] = &args[i];
 	}
 	return bindp(sizeof...(p_args) == 0 ? nullptr : (const Variant **)argptrs, sizeof...(p_args));
+}
+
+Variant &Array::Iterator::operator*() const {
+	if (unlikely(read_only)) {
+		*read_only = *element_ptr;
+		return *read_only;
+	}
+	return *element_ptr;
+}
+
+Variant *Array::Iterator::operator->() const {
+	if (unlikely(read_only)) {
+		*read_only = *element_ptr;
+		return read_only;
+	}
+	return element_ptr;
+}
+
+Array::Iterator &Array::Iterator::operator++() {
+	element_ptr++;
+	return *this;
+}
+
+Array::Iterator &Array::Iterator::operator--() {
+	element_ptr--;
+	return *this;
+}
+
+const Variant &Array::ConstIterator::operator*() const {
+	if (unlikely(read_only)) {
+		*read_only = *element_ptr;
+		return *read_only;
+	}
+	return *element_ptr;
+}
+
+const Variant *Array::ConstIterator::operator->() const {
+	if (unlikely(read_only)) {
+		*read_only = *element_ptr;
+		return read_only;
+	}
+	return element_ptr;
+}
+
+Array::ConstIterator &Array::ConstIterator::operator++() {
+	element_ptr++;
+	return *this;
+}
+
+Array::ConstIterator &Array::ConstIterator::operator--() {
+	element_ptr--;
+	return *this;
 }
 
 #endif // VARIANT_H
