@@ -70,21 +70,28 @@ enum SceneUniformLocation {
 	SCENE_GLOBALS_UNIFORM_LOCATION,
 	SCENE_DATA_UNIFORM_LOCATION,
 	SCENE_MATERIAL_UNIFORM_LOCATION,
-	SCENE_EMPTY, // Unused, put here to avoid conflicts with SKY_DIRECTIONAL_LIGHT_UNIFORM_LOCATION.
+	SCENE_EMPTY1, // Unused, put here to avoid conflicts with SKY_DIRECTIONAL_LIGHT_UNIFORM_LOCATION.
 	SCENE_OMNILIGHT_UNIFORM_LOCATION,
 	SCENE_SPOTLIGHT_UNIFORM_LOCATION,
 	SCENE_DIRECTIONAL_LIGHT_UNIFORM_LOCATION,
 	SCENE_MULTIVIEW_UNIFORM_LOCATION,
 	SCENE_POSITIONAL_SHADOW_UNIFORM_LOCATION,
 	SCENE_DIRECTIONAL_SHADOW_UNIFORM_LOCATION,
+	SCENE_EMPTY2, // Unused, put here to avoid conflicts with SKY_MULTIVIEW_UNIFORM_LOCATION.
 };
 
 enum SkyUniformLocation {
 	SKY_TONEMAP_UNIFORM_LOCATION,
 	SKY_GLOBALS_UNIFORM_LOCATION,
-	SKY_EMPTY, // Unused, put here to avoid conflicts with SCENE_DATA_UNIFORM_LOCATION.
+	SKY_EMPTY1, // Unused, put here to avoid conflicts with SCENE_DATA_UNIFORM_LOCATION.
 	SKY_MATERIAL_UNIFORM_LOCATION,
 	SKY_DIRECTIONAL_LIGHT_UNIFORM_LOCATION,
+	SKY_EMPTY2, // Unused, put here to avoid conflicts with SCENE_OMNILIGHT_UNIFORM_LOCATION.
+	SKY_EMPTY3, // Unused, put here to avoid conflicts with SCENE_SPOTLIGHT_UNIFORM_LOCATION.
+	SKY_EMPTY4, // Unused, put here to avoid conflicts with SCENE_DIRECTIONAL_LIGHT_UNIFORM_LOCATION.
+	SKY_EMPTY5, // Unused, put here to avoid conflicts with SCENE_MULTIVIEW_UNIFORM_LOCATION.
+	SKY_EMPTY6, // Unused, put here to avoid conflicts with SCENE_POSITIONAL_SHADOW_UNIFORM_LOCATION.
+	SKY_EMPTY7, // Unused, put here to avoid conflicts with SCENE_DIRECTIONAL_SHADOW_UNIFORM_LOCATION.
 	SKY_MULTIVIEW_UNIFORM_LOCATION,
 };
 
@@ -434,6 +441,11 @@ private:
 			float white = 1.0;
 			int32_t tonemapper = 0;
 			int32_t pad = 0;
+
+			int32_t pad2 = 0;
+			float brightness = 1.0;
+			float contrast = 1.0;
+			float saturation = 1.0;
 		};
 		static_assert(sizeof(TonemapUBO) % 16 == 0, "Tonemap UBO size must be a multiple of 16 bytes");
 
